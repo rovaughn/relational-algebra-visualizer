@@ -1,0 +1,14 @@
+
+.rel {
+    border-collapse: collapse;
+}
+
+.rel td {
+    border: 1px solid black;
+    padding: 0;
+}
+
+.rel td input {
+    margin: 0;
+}
+
