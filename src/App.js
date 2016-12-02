@@ -29,7 +29,21 @@ class Rel {
     }
 
     select(f) {
-        return new Rel(this.rows.filter(f));
+        if (typeof f === 'string') {
+            return new Rel(this.rows.filter(row => {
+                let statement = '';
+
+                for (var k of row.keys()) {
+                    statement += `var ${k} = row.get(${JSON.stringify(k)});`;
+                }
+
+                statement += f;
+
+                return eval(statement);
+            }));
+        } else {
+            return new Rel(this.rows.filter(f));
+        }
     }
 
     project(...cols) {
@@ -115,7 +129,7 @@ class App extends Component {
                 books: books,
                 authors: authors,
             }),
-            query: `nobel_winners.project('author').natural_join(books)`,
+            query: `books.select('year <= 1950')`,
         };
     }
 
@@ -136,15 +150,19 @@ class App extends Component {
 
         try {
             result = (function() {
-                for (var k in this.state.rels.toJS()) {
-                    eval(k + ' = this.state.rels.get(k)');
+                let statement = '';
+
+                for (var k of this.state.rels.keys()) {
+                    statement += `var ${k} = this.state.rels.get(${JSON.stringify(k)});`;
                 }
 
-                return eval(this.state.query).render();
+                statement += this.state.query;
+
+                return eval(statement).render();
             }).call(this);
         } catch (e) {
             console.error(e);
-            result = <p>error {e.toString()}</p>;
+            result = <p>could not understand query</p>
         }
 
         return (
@@ -155,6 +173,10 @@ class App extends Component {
                         {rel.render(change(relname))}
                     </div>;
                 }).toList()}
+                <pre>
+                nobel_winners.project('author').natural_join(books)
+                {`\nbooks.select(row => row.get('year') <= 1950)`}
+                </pre>
                 <p><textarea cols="80" onChange={change_query} value={this.state.query}/></p>
                 {result}
             </div>
